@@ -1,5 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using AuthenticationServiceWithCustomJwt.Options;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AuthenticationService.Infrastructure
 {
@@ -8,11 +13,15 @@ namespace AuthenticationService.Infrastructure
         private const string Username = "admin";
         private const string Password = "password";
 
-        private readonly IDictionary<string, Token> _tokens;
+        private readonly JwtSecurityTokenHandler _tokenHandler;
+        private readonly AuthorizationOptions _options;
+        private readonly byte[] _secretKey;
 
-        public TokenManager()
+        public TokenManager(IOptions<AuthorizationOptions> options)
         {
-            _tokens = new Dictionary<string, Token>();
+            _tokenHandler = new JwtSecurityTokenHandler();
+            _options = options.Value;
+            _secretKey = Encoding.ASCII.GetBytes(_options.SecretKey);
         }
 
         // We usually authenticate via database or some other data storage.
@@ -26,33 +35,48 @@ namespace AuthenticationService.Infrastructure
             return string.Equals(user, Username) && string.Equals(password, Password);
         }
 
-        public Token CreateToken()
+        public string CreateToken()
         {
-            var token = new Token
+            var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Value = Guid.NewGuid().ToString(),
-                ExpirationDate = DateTime.Now.AddMinutes(10)
+                // The user info. It gets or sets the claims. The claims can store the following information:
+                // * user's name
+                // * user's email
+                // * user's age
+                // * user's authorization for an action
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.Name, "Ilya Valchanka")
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(1),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(_secretKey), SecurityAlgorithms.HmacSha256Signature)
             };
 
-            _tokens.Add(token.Value, token);
-            return token;
+            var token = _tokenHandler.CreateToken(tokenDescriptor);
+            var jwtString = _tokenHandler.WriteToken(token);
+
+            return jwtString;
         }
 
-        public bool VerifyToken(string token)
+        public ClaimsPrincipal VerifyToken(string token)
         {
-            if (token == null)
+            var validationParameters = new TokenValidationParameters
             {
-                return false;
-            }
-
-            _tokens.TryGetValue(token, out Token tokenFromStorage);
-
-            if (tokenFromStorage == null)
-            {
-                return false;
-            }
-
-            return string.Equals(token, tokenFromStorage.Value) && tokenFromStorage.ExpirationDate > DateTime.Now;
+                // Validates a signature of the token.
+                ValidateIssuerSigningKey = true,
+                // The key which is used for signature validation.
+                IssuerSigningKey = new SymmetricSecurityKey(_secretKey),
+                ValidateLifetime = true,
+                // The audience refer to the Resource Servers that should accept the token such as https://contoso.com.
+                ValidateAudience = false,
+                // The issuer is an application which generates the token. Basically it's string or URI.
+                ValidateIssuer = false,
+                ClockSkew = TimeSpan.Zero
+            };
+            
+            // If the validation will fail it will actually throws an exception.
+            var claims = _tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+            return claims;
         }
     }
 }

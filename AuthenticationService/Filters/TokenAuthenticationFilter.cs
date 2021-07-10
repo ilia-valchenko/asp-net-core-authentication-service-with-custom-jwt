@@ -29,9 +29,15 @@ namespace AuthenticationService.Filters
                 token = context.HttpContext.Request.Headers["Authorization"];
                 var tokenManager = (ITokenManager)context.HttpContext.RequestServices.GetService(typeof(ITokenManager));
 
-                if (!tokenManager.VerifyToken(token))
+                try
+                {
+                    // If the validation will fail it will actually throws an exception.
+                    tokenManager.VerifyToken(token);
+                }
+                catch (Exception ex)
                 {
                     isAuthorized = false;
+                    context.ModelState.AddModelError("Unauthorized", ex.ToString());
                 }
             }
 

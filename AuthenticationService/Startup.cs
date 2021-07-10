@@ -1,4 +1,5 @@
 using AuthenticationService.Infrastructure;
+using AuthenticationServiceWithCustomJwt.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -41,7 +42,8 @@ namespace AuthenticationService
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ApiVersioningExample", Version = "v1" });
             });
 
-            services.AddSingleton<ITokenManager, TokenManager>();
+            services.AddScoped<ITokenManager, TokenManager>();
+            services.Configure<AuthorizationOptions>(Configuration.GetSection("Authorization"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
