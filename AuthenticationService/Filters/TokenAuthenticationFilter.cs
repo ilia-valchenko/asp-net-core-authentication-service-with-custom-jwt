@@ -8,6 +8,7 @@ namespace AuthenticationService.Filters
     public class TokenAuthenticationFilter : Attribute, IAuthorizationFilter
     {
         //// The filter cannot use the regular way of dependency injection.
+        //// Please use (T)context.HttpContext.RequestServices.GetService(typeof(T))
         //public TokenAuthenticationFilter(ITokenManager tokenManager)
         //{
         //    _tokenManager = tokenManager;
