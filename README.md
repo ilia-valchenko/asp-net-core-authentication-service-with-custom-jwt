@@ -1,1 +1,1 @@
-# asp-net-core-authentication-service-with-custom-jwt
+# asp-net-core-authentication-service
