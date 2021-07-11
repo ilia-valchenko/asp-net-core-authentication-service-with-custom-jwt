@@ -16,3 +16,5 @@
     }
 }
 ```
+
+A person who stole and modified the token will not be able to use it because the modified token will not pass a signature validation.
