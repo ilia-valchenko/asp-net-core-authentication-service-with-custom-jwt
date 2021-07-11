@@ -58,6 +58,10 @@ namespace AuthenticationService.Infrastructure
             return jwtString;
         }
 
+        // Note: The VerifyToken method is not necessarily have to be inside the token manager.
+        // Here in AuthenticationService we only need the authentication endpoint to generate the token.
+        // It allows us to implement Single Sign-On (SSO). As long as each Web API service shares the same secret key
+        // then they can use the token handler to verify the token.
         public ClaimsPrincipal VerifyToken(string token)
         {
             var validationParameters = new TokenValidationParameters
